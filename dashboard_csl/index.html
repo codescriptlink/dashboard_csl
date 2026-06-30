@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jwar-code — éditeur avec Link</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <div id="topbar">
+    <div id="brand"><div class="mark"></div><span>Jwar-code</span><small>avec Link · hors-ligne / en ligne</small></div>
+    <div class="spacer"></div>
+    <div id="statusdot" title="État réseau"></div>
+    <button class="topbtn" id="btnTheme" title="Basculer jour / nuit">☾</button>
+    <button class="topbtn" id="btnRun">▶ Exécuter</button>
+    <button class="topbtn" id="btnExport">⬇ Exporter (.zip)</button>
+    <button class="topbtn primary" id="btnNewProject">+ Nouveau projet</button>
+    <button class="topbtn" id="btnOpenAuth">Se connecter</button>
+    <div id="appUserZone" style="position:relative;display:none;">
+      <div id="appPseudoPill" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 11px;border-radius:16px;border:1px solid var(--line);font-size:12px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#4caf6a;"></span>
+        <span id="appPseudoPillText"></span>
+      </div>
+      <div id="appPseudoCard" style="display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:210px;background:var(--bg-panel);border:1px solid var(--line);border-radius:10px;padding:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px;z-index:30;">
+        <div id="appCardPseudo" style="font-weight:700;font-size:13.5px;margin-bottom:3px;"></div>
+        <div id="appCardEmail" style="color:var(--text-dim);margin-bottom:11px;word-break:break-all;"></div>
+        <button class="topbtn" id="appBtnLogout" style="width:100%;">Se déconnecter</button>
+      </div>
+    </div>
+    <div id="googleAccountWrap">
+      <div id="gsiContainerTop"></div>
+      <div id="googleUserInfoTop" style="display:none;"></div>
+      <div id="googleConfigRow" style="display:none;">
+        <input id="googleClientIdInput" placeholder="Client ID Google OAuth (xxxx.apps.googleusercontent.com)">
+        <button class="topbtn" id="btnSaveGoogleClientId">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div id="tabs">
+        <button class="tabbtn active" data-tab="chat">Link</button>
+        <button class="tabbtn" data-tab="files">Fichiers</button>
+      </div>
+
+      <div id="chatpane">
+        <div id="aimoderow">
+          <span>IA :</span>
+          <button class="modebtn active" id="modeLocal" data-mode="local">Local</button>
+          <button class="modebtn" id="modeCloud" data-mode="cloud">Cloud (ma clé)</button>
+          <button class="modebtn" id="modeGoogle" data-mode="google">Cloud (Google)</button>
+        </div>
+        <div id="modelrow" style="display:none;">
+          <span>Modèle :</span>
+          <select id="modelSelect">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+          </select>
+        </div>
+        <div id="cloudkeyrow" style="display:none;">
+          <input type="password" id="cloudApiKey" placeholder="Clé API Anthropic (sk-ant-…)">
+          <button class="topbtn" id="btnSaveKey">OK</button>
+        </div>
+        <div id="googlerow" style="display:none;">
+          <input id="backendUrlInput" placeholder="URL de ton serveur relais (ex: https://....workers.dev)">
+          <button class="topbtn" id="btnSaveBackend">OK</button>
+          <div id="googleStatusNote" style="font-size:11.5px;color:var(--text-dim);margin-top:6px;"></div>
+        </div>
+        <div id="chatlog"></div>
+        <div id="chatinputwrap">
+          <textarea id="chatinput" placeholder="Demande un gabarit d'app (todo, calculatrice…) ou une recherche à appliquer dans le code… (Entrée pour envoyer)"></textarea>
+          <div id="sendrow">
+            <button class="topbtn primary" id="btnSend">Envoyer</button>
+            <small id="netnote">Link · aucune clé API requise</small>
+          </div>
+        </div>
+      </div>
+
+      <div id="filespane">
+        <div id="filelist"></div>
+        <div id="newfilerow">
+          <input id="newfileinput" placeholder="nouveau-fichier.html — Entrée pour créer" />
+        </div>
+      </div>
+    </div>
+
+    <div id="center">
+      <div id="editorbar"><span id="activefilename">aucun fichier</span></div>
+      <div id="editorwrap">
+        <div id="linenums">1</div>
+        <textarea id="editor" spellcheck="false" placeholder="// Sélectionne ou crée un fichier pour commencer à coder"></textarea>
+      </div>
+    </div>
+
+    <div id="right">
+      <div id="previewbar"><span>Aperçu en direct</span><span id="previewstate" style="color:var(--text-dim);font-size:11px;"></span></div>
+      <iframe id="previewframe" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+      <div id="console"></div>
+    </div>
+  </div>
+
+  <div id="mobileTabs">
+    <button class="mobiletabbtn active" data-pane="left"><span>💬</span>Link</button>
+    <button class="mobiletabbtn" data-pane="center"><span>📝</span>Éditeur</button>
+    <button class="mobiletabbtn" data-pane="right"><span>👁</span>Aperçu</button>
+  </div>
+</div>
+
+<div id="welcome">
+  <div class="box">
+    <h3>Jwar-code</h3>
+    <p>Éditeur de code HTML/CSS/JS utilisable hors-ligne, avec aperçu en direct et export en .zip (fichiers séparés).</p>
+    <p><strong style="color:var(--ember)">Link</strong>, l'assistant intégré, ne demande aucune clé API. Il génère des gabarits d'applications courantes localement, et peut aussi effectuer une vraie recherche web (via l'API publique de Wikipédia) pour insérer un résultat directement dans tes fichiers.</p>
+    <button class="topbtn primary" id="btnStart">Commencer</button>
+  </div>
+</div>
+
+<!-- ---- Modal Se connecter / S'inscrire (compte pseudo + mail + mot de passe) ---- -->
+<div id="authOverlay">
+  <div id="authModal">
+    <button id="authClose">×</button>
+    <div id="authTabs">
+      <div class="authtab active" data-tab="login">Se connecter</div>
+      <div class="authtab" data-tab="register">S'inscrire</div>
+    </div>
+
+    <div class="configrow" id="authBackendRow">
+      <input id="authBackendUrlInput" placeholder="URL du backend Apps Script (https://script.google.com/macros/s/.../exec)">
+      <button class="topbtn" id="btnSaveAuthBackend">OK</button>
+    </div>
+
+    <form class="authform active" id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Adresse mail" required>
+      <input type="password" id="loginPassword" placeholder="Mot de passe" required>
+      <button class="topbtn primary" type="submit">Se connecter</button>
+      <div class="authmsg" id="loginMsg"></div>
+    </form>
+
+    <form class="authform" id="registerForm">
+      <input type="text" id="regPseudo" placeholder="Pseudo" required>
+      <input type="email" id="regEmail" placeholder="Adresse mail" required>
+      <input type="password" id="regPassword" placeholder="Mot de passe" required>
+      <button class="topbtn primary" type="submit">S'inscrire</button>
+      <div class="authmsg" id="regMsg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Link : moteur IA local + recherche web, sans clé API -->
+<script src="script.js"></script>
+<!-- Affiche le pseudo de session (connecté depuis dashboard.html), sans interférer avec script.js -->
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  function readSession(){
+    try{ return JSON.parse(localStorage.getItem("jwarcode-session") || "null"); }catch(e){ return null; }
+  }
+  function render(){
+    const s = readSession();
+    const zone = $("appUserZone");
+    if(s){
+      zone.style.display = "block";
+      $("appPseudoPillText").textContent = s.pseudo;
+      $("appCardPseudo").textContent = s.pseudo;
+      $("appCardEmail").textContent = s.email;
+    } else {
+      zone.style.display = "none";
+    }
+  }
+  $("appBtnLogout").addEventListener("click", ()=>{
+    localStorage.removeItem("jwarcode-session");
+    render();
+  });
+
+  /* ---------- Backend Apps Script (comptes pseudo/mail/mot de passe) ---------- */
+  let BACKEND_URL = localStorage.getItem("jwarcode-backendurl") || "";
+  $("authBackendUrlInput").value = BACKEND_URL;
+  $("authBackendRow").style.display = BACKEND_URL ? "none" : "flex";
+  $("btnSaveAuthBackend").addEventListener("click", ()=>{
+    BACKEND_URL = $("authBackendUrlInput").value.trim();
+    localStorage.setItem("jwarcode-backendurl", BACKEND_URL);
+    $("authBackendRow").style.display = "none";
+  });
+
+  async function callBackend(action, payload){
+    if(!BACKEND_URL) return { ok:false, error:"backend_non_configure" };
+    try{
+      const res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, // évite le préflight CORS avec Apps Script
+        body: JSON.stringify(Object.assign({ action }, payload))
+      });
+      return await res.json();
+    }catch(e){
+      return { ok:false, error:"reseau" };
+    }
+  }
+
+  function setSession(user){
+    localStorage.setItem("jwarcode-session", JSON.stringify({ pseudo:user.pseudo, email:user.email, source:"app" }));
+    render();
+  }
+
+  /* ---------- Ouverture / fermeture du popup ---------- */
+  $("btnOpenAuth").addEventListener("click", ()=>{
+    $("authBackendRow").style.display = BACKEND_URL ? "none" : "flex";
+    $("authOverlay").style.display = "flex";
+  });
+  $("authClose").addEventListener("click", ()=> $("authOverlay").style.display = "none");
+  $("authOverlay").addEventListener("click", (e)=>{ if(e.target.id === "authOverlay") $("authOverlay").style.display = "none"; });
+
+  document.querySelectorAll(".authtab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".authtab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".authform").forEach(f=>f.classList.remove("active"));
+      tab.classList.add("active");
+      $(tab.dataset.tab === "login" ? "loginForm" : "registerForm").classList.add("active");
+    });
+  });
+
+  $("loginForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const msg = $("loginMsg"); msg.className = "authmsg"; msg.textContent = "Connexion…";
+    const r = await callBackend("login", { email: $("loginEmail").value.trim(), password: $("loginPassword").value });
+    if(r.ok){
+      msg.className = "authmsg ok"; msg.textContent = "Connecté !";
+      setSession(r.user);
+      $("btnOpenAuth").style.display = "none";
+      setTimeout(()=> $("authOverlay").style.display = "none", 500);
+    } else {
+      msg.className = "authmsg err";
+      msg.textContent = r.error === "backend_non_configure" ? "Configure d'abord l'URL du backend ci-dessus."
+        : r.error === "utilisateur_introuvable" ? "Aucun compte avec ce mail."
+        : r.error === "mot_de_passe_incorrect" ? "Mot de passe incorrect."
+        : "Erreur de connexion.";
+    }
+  });
+
+  $("registerForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const msg = $("regMsg"); msg.className = "authmsg"; msg.textContent = "Inscription…";
+    const r = await callBackend("register", {
+      pseudo: $("regPseudo").value.trim(),
+      email: $("regEmail").value.trim(),
+      password: $("regPassword").value
+    });
+    if(r.ok){
+      msg.className = "authmsg ok"; msg.textContent = "Compte créé !";
+      setSession(r.user);
+      $("btnOpenAuth").style.display = "none";
+      setTimeout(()=> $("authOverlay").style.display = "none", 500);
+    } else {
+      msg.className = "authmsg err";
+      msg.textContent = r.error === "backend_non_configure" ? "Configure d'abord l'URL du backend ci-dessus."
+        : r.error === "deja_inscrit" ? "Cet utilisateur est déjà inscrit."
+        : r.error === "champs_manquants" ? "Remplis tous les champs."
+        : "Erreur d'inscription.";
+    }
+  });
+
+  /* ---------- Navigation mobile (Link / Éditeur / Aperçu) ---------- */
+  const mainEl = document.getElementById("main");
+  document.querySelectorAll(".mobiletabbtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".mobiletabbtn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      mainEl.setAttribute("data-mobilepane", btn.dataset.pane);
+    });
+  });
+  mainEl.setAttribute("data-mobilepane", "left");
+
+  if(readSession()) $("btnOpenAuth").style.display = "none";
+  render();
+})();
+</script>
+</body>
+</html>
